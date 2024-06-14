@@ -128,6 +128,7 @@ class AuthorizationService:
                     # to check for exact matches as well
                     # see test_user_can_access_base_path_when_given_wildcard_permission unit test
                     func.REPLACE(func.REPLACE(PermissionTargetModel.uri, "/%", ""), ":%", "") == target_uri_normalized,
+                    PermissionTargetModel.uri == "/*"
                 )
             )
             .all()
@@ -461,6 +462,7 @@ class AuthorizationService:
         if current_app.config["SPIFFWORKFLOW_BACKEND_OPEN_ID_IS_AUTHORITY_FOR_USER_GROUPS"]:
             if "groups" in user_info:
                 desired_group_identifiers = user_info["groups"]
+                desired_group_identifiers = [desired_group_identifier.lstrip("/") for desired_group_identifier in desired_group_identifiers]
 
         for field_index, tenant_specific_field in enumerate(
             current_app.config["SPIFFWORKFLOW_BACKEND_OPEN_ID_TENANT_SPECIFIC_FIELDS"]
@@ -498,7 +500,7 @@ class AuthorizationService:
                 )
             else:
                 for desired_group_identifier in desired_group_identifiers:
-                    UserService.add_user_to_group_by_group_identifier(user_model, desired_group_identifier)
+                    UserService.add_user_to_group_by_group_identifier(user_model, desired_group_identifier.lstrip('/'))
                 current_group_identifiers = [g.identifier for g in user_model.groups]
                 groups_to_remove_from_user = [item for item in current_group_identifiers if item not in desired_group_identifiers]
                 for gtrfu in groups_to_remove_from_user:

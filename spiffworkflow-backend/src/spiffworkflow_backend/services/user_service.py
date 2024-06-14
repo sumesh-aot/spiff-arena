@@ -14,6 +14,8 @@ from spiffworkflow_backend.models.human_task import HumanTaskModel
 from spiffworkflow_backend.models.human_task_user import HumanTaskUserModel
 from spiffworkflow_backend.models.principal import MissingPrincipalError
 from spiffworkflow_backend.models.principal import PrincipalModel
+from spiffworkflow_backend.models.permission_assignment import PermissionAssignmentModel, Permission
+from spiffworkflow_backend.models.permission_target import PermissionTargetModel
 from spiffworkflow_backend.models.user import SPIFF_GUEST_USER
 from spiffworkflow_backend.models.user import SPIFF_SYSTEM_USER
 from spiffworkflow_backend.models.user import UserModel
@@ -27,15 +29,15 @@ class UserService:
 
     @classmethod
     def create_user(
-        cls,
-        username: str,
-        service: str,
-        service_id: str,
-        email: str | None = "",
-        display_name: str | None = "",
-        tenant_specific_field_1: str | None = None,
-        tenant_specific_field_2: str | None = None,
-        tenant_specific_field_3: str | None = None,
+            cls,
+            username: str,
+            service: str,
+            service_id: str,
+            email: str | None = "",
+            display_name: str | None = "",
+            tenant_specific_field_1: str | None = None,
+            tenant_specific_field_2: str | None = None,
+            tenant_specific_field_3: str | None = None,
     ) -> UserModel:
         user_model: UserModel | None = (
             UserModel.query.filter(UserModel.service == service).filter(UserModel.service_id == service_id).first()
@@ -130,7 +132,7 @@ class UserService:
 
     @classmethod
     def add_waiting_group_assignment(
-        cls, username: str, group: GroupModel
+            cls, username: str, group: GroupModel
     ) -> tuple[UserGroupAssignmentWaitingModel, list[UserToGroupDict]]:
         """Only called from set-permissions."""
         wugam: UserGroupAssignmentWaitingModel | None = (
@@ -155,7 +157,8 @@ class UserService:
     @classmethod
     def apply_waiting_group_assignments(cls, user: UserModel) -> None:
         """Only called from create_user which is normally called at sign-in time"""
-        waiting = UserGroupAssignmentWaitingModel().query.filter(UserGroupAssignmentWaitingModel.username == user.username).all()
+        waiting = UserGroupAssignmentWaitingModel().query.filter(
+            UserGroupAssignmentWaitingModel.username == user.username).all()
         for assignment in waiting:
             cls.add_user_to_group(user, assignment.group)
             db.session.delete(assignment)
@@ -171,7 +174,8 @@ class UserService:
 
     @staticmethod
     def get_user_by_service_and_service_id(service: str, service_id: str) -> UserModel | None:
-        user: UserModel = UserModel.query.filter(UserModel.service == service).filter(UserModel.service_id == service_id).first()
+        user: UserModel = UserModel.query.filter(UserModel.service == service).filter(
+            UserModel.service_id == service_id).first()
         if user:
             return user
         return None
@@ -179,7 +183,8 @@ class UserService:
     @classmethod
     def add_user_to_human_tasks_if_appropriate(cls, user: UserModel) -> None:
         group_ids = [g.id for g in user.groups]
-        human_tasks = HumanTaskModel.query.filter(HumanTaskModel.lane_assignment_id.in_(group_ids)).all()  # type: ignore
+        human_tasks = HumanTaskModel.query.filter(
+            HumanTaskModel.lane_assignment_id.in_(group_ids)).all()  # type: ignore
         for human_task in human_tasks:
             human_task_user = HumanTaskUserModel(user_id=user.id, human_task_id=human_task.id)
             db.session.add(human_task_user)
@@ -229,13 +234,29 @@ class UserService:
         if group is None:
             group = GroupModel(identifier=group_identifier)
             db.session.add(group)
+            if group_identifier == current_app.config["SPIFFWORKFLOW_BACKEND_WORKFLOW_ADMIN_GROUP"]:
+                # If the group is for workflow admin, add them to /* permission
+                all_perm: PermissionTargetModel = PermissionTargetModel.query.filter_by(uri="/*").first()
+                # Insert a Principal for this group
+                db.session.flush()
+                db.session.refresh(group)
+                principal = PrincipalModel(group_id=group.id)
+                db.session.add(principal)
+                db.session.flush()
+                db.session.refresh(principal)
+                # Insert Permission Assignments
+                for permission in Permission:
+                    permission_assignment = PermissionAssignmentModel(principal_id=principal.id,
+                                                                  permission_target_id=all_perm.id, grant_type="permit",
+                                                                  permission=permission.value)
+                    db.session.add(permission_assignment)
             db.session.commit()
             cls.create_principal(group.id, id_column_name="group_id")
         return group
 
     @classmethod
     def add_user_to_group_or_add_to_waiting(
-        cls, username: str | UserModel, group_identifier: str
+            cls, username: str | UserModel, group_identifier: str
     ) -> tuple[UserGroupAssignmentWaitingModel | None, list[UserToGroupDict] | None]:
         group = cls.find_or_create_group(group_identifier)
         user = UserModel.query.filter_by(username=username).first()
@@ -266,7 +287,8 @@ class UserService:
         db.session.commit()
 
     @classmethod
-    def find_or_create_guest_user(cls, username: str = SPIFF_GUEST_USER, group_identifier: str = SPIFF_GUEST_GROUP) -> UserModel:
+    def find_or_create_guest_user(cls, username: str = SPIFF_GUEST_USER,
+                                  group_identifier: str = SPIFF_GUEST_GROUP) -> UserModel:
         user: UserModel | None = UserModel.query.filter_by(
             username=username, service="spiff_guest_service", service_id="spiff_guest_service_id"
         ).first()

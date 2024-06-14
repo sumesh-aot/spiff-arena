@@ -582,6 +582,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessModel"
 
+  /deployment/create:
+    post:
+      operationId: spiffworkflow_backend.routes.process_models_controller.process_model_create
+      summary: Creates a new process model with the given parameters.
+      tags:
+        - Process Models
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessModel"
+      responses:
+        "201":
+          description: Process model created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessModel"
+
   /process-model-natural-language/{modified_process_group_id}:
     parameters:
       - name: modified_process_group_id
