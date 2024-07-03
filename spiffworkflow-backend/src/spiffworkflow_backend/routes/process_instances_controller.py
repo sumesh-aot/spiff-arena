@@ -62,10 +62,12 @@ from spiffworkflow_backend.services.task_service import TaskService
 
 def process_instance_create(
     modified_process_model_identifier: str,
+        #TODO data payload
 ) -> flask.wrappers.Response:
     process_model_identifier = _un_modify_modified_process_model_id(modified_process_model_identifier)
 
     process_instance = _process_instance_create(process_model_identifier)
+
     return Response(
         json.dumps(ProcessInstanceModelSchema().dump(process_instance)),
         status=201,
@@ -79,6 +81,7 @@ def process_instance_run(
     force_run: bool = False,
     execution_mode: str | None = None,
 ) -> flask.wrappers.Response:
+
     process_instance = _find_process_instance_by_id_or_raise(process_instance_id)
     _process_instance_run(process_instance, force_run=force_run, execution_mode=execution_mode)
 
@@ -708,16 +711,16 @@ def _process_instance_run(
 def _process_instance_create(
     process_model_identifier: str,
 ) -> ProcessInstanceModel:
-    process_model = _get_process_model_for_instantiation(process_model_identifier)
-    if process_model.primary_file_name is None:
-        raise ApiError(
-            error_code="process_model_missing_primary_bpmn_file",
-            message=(
-                f"Process Model '{process_model_identifier}' does not have a primary"
-                " bpmn file. One must be set in order to instantiate this model."
-            ),
-            status_code=400,
-        )
+    # process_model = _get_process_model_for_instantiation(process_model_identifier) # Return process model from database
+    # if process_model.primary_file_name is None:
+    #     raise ApiError(
+    #         error_code="process_model_missing_primary_bpmn_file",
+    #         message=(
+    #             f"Process Model '{process_model_identifier}' does not have a primary"
+    #             " bpmn file. One must be set in order to instantiate this model."
+    #         ),
+    #         status_code=400,
+    #     )
 
     process_instance = ProcessInstanceService.create_process_instance_from_process_model_identifier(
         process_model_identifier, g.user

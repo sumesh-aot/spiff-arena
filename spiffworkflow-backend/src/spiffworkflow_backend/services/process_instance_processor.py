@@ -546,14 +546,19 @@ class ProcessInstanceProcessor:
                     f"The given process model was not found: {process_model_identifier}.",
                 )
             )
-        spec_files = FileSystemService.get_files(process_model_info)
-        return cls.get_spec(spec_files, process_model_info, process_id_to_run=process_id_to_run)
+        # CHANGE HEREEEEE
+        # spec_files = FileSystemService.get_files(process_model_info)
+
+        #return cls.get_spec(spec_files, process_model_info, process_id_to_run=process_id_to_run)
+        return cls.get_spec(process_model_info, process_model_info, process_id_to_run=process_id_to_run)
 
     @classmethod
     def get_bpmn_process_instance_from_process_model(cls, process_model_identifier: str) -> BpmnWorkflow:
+        # CHANGE HEREEEEE
         (bpmn_process_spec, subprocesses) = cls.get_process_model_and_subprocesses(
             process_model_identifier,
         )
+
         bpmn_process_instance = cls.get_bpmn_process_instance_from_workflow_spec(bpmn_process_spec, subprocesses)
         cls.set_script_engine(bpmn_process_instance)
         return bpmn_process_instance
@@ -1270,6 +1275,7 @@ class ProcessInstanceProcessor:
     def backfill_missing_spec_reference_records(
         bpmn_process_identifier: str,
     ) -> str | None:
+        #TODO CHANGE HERE TO GET ALL PROCESS MODELS From DATABASE. Then add to the ReferenceCacheModel.
         process_models = ProcessModelService.get_process_models(recursive=True)
         for process_model in process_models:
             try:
@@ -1277,7 +1283,7 @@ class ProcessInstanceProcessor:
                 bpmn_process_identifiers = refs.keys()
                 if bpmn_process_identifier in bpmn_process_identifiers:
                     SpecFileService.update_process_cache(refs[bpmn_process_identifier])
-                    return FileSystemService.full_path_to_process_model_file(process_model)
+                    return process_model.name #FileSystemService.full_path_to_process_model_file(process_model)
             except Exception:
                 current_app.logger.warning("Failed to parse process ", process_model.id)
         return None
@@ -1328,16 +1334,18 @@ class ProcessInstanceProcessor:
             if bpmn_process_identifier in bpmn_process_identifiers_in_parser:
                 continue
 
-            new_bpmn_file_full_path = ProcessInstanceProcessor.bpmn_file_full_path_from_bpmn_process_identifier(
-                bpmn_process_identifier
-            )
-            new_bpmn_files.add(new_bpmn_file_full_path)
-            dmn_file_glob = os.path.join(os.path.dirname(new_bpmn_file_full_path), "*.dmn")
-            parser.add_dmn_files_by_glob(dmn_file_glob)
+            # new_bpmn_file_full_path = ProcessInstanceProcessor.bpmn_file_full_path_from_bpmn_process_identifier(
+            #     bpmn_process_identifier
+            # )
+            # new_bpmn_files.add(new_bpmn_file_full_path)
+            new_bpmn_files.add(bpmn_process_identifier)
+            # TODO Add parsing for DMN files.
+            # dmn_file_glob = os.path.join(os.path.dirname(new_bpmn_file_full_path), "*.dmn")
+            # parser.add_dmn_files_by_glob(dmn_file_glob)
             processed_identifiers.add(bpmn_process_identifier)
 
         if new_bpmn_files:
-            parser.add_bpmn_files(new_bpmn_files)
+            parser.add_bpmn_files(new_bpmn_files) #TODO Find out how this can be done fom the Database Content
             ProcessInstanceProcessor.update_spiff_parser_with_all_process_dependency_files(parser, processed_identifiers)
 
     @staticmethod
@@ -1351,20 +1359,23 @@ class ProcessInstanceProcessor:
 
         process_id = process_id_to_run or process_model_info.primary_process_id
 
-        for file in files:
-            data = SpecFileService.get_data(process_model_info, file.name)
-            try:
-                if file.type == FileType.bpmn.value:
-                    bpmn: etree.Element = SpecFileService.get_etree_from_xml_bytes(data)
-                    parser.add_bpmn_xml(bpmn, filename=file.name)
-                elif file.type == FileType.dmn.value:
-                    dmn: etree.Element = SpecFileService.get_etree_from_xml_bytes(data)
-                    parser.add_dmn_xml(dmn, filename=file.name)
-            except XMLSyntaxError as xse:
-                raise ApiError(
-                    error_code="invalid_xml",
-                    message=f"'{file.name}' is not a valid xml file." + str(xse),
-                ) from xse
+        #TODO Need to find a way to load all the dependant BPMN, DMN etc.
+        # Add only the main file for now, for POC.
+
+        # for file in files:
+        data = process_model_info.content.tobytes()
+        try:
+            if process_model_info.type == FileType.bpmn.value:
+                bpmn: etree.Element = SpecFileService.get_etree_from_xml_bytes(data)
+                parser.add_bpmn_xml(bpmn, filename=process_model_info.display_name)
+            elif process_model_info.type == FileType.dmn.value:
+                dmn: etree.Element = SpecFileService.get_etree_from_xml_bytes(data)
+                parser.add_dmn_xml(dmn, filename=process_model_info.display_name)
+        except XMLSyntaxError as xse:
+            raise ApiError(
+                error_code="invalid_xml",
+                message=f"'{process_model_info.display_name}' is not a valid xml file." + str(xse),
+            ) from xse
         if process_id is None or process_id == "":
             raise (
                 ApiError(
