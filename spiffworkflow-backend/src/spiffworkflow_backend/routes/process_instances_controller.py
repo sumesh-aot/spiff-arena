@@ -60,9 +60,24 @@ from spiffworkflow_backend.services.process_model_service import ProcessModelSer
 from spiffworkflow_backend.services.task_service import TaskService
 
 
+def process_instance_start(
+    process_model_identifier: str,
+    force_run: bool = False,
+    execution_mode: str | None = None,
+    body: dict = None,
+) -> flask.wrappers.Response:
+    # TODO data payload
+    # body = request.get_json()
+    current_app.logger.info(f"Creating an instance with payload : {body}")
+    process_instance = _process_instance_create(process_model_identifier)
+    current_app.logger.info(f"Instance created succesfully : {process_instance.id}")
+
+    current_app.logger.info("running the instance")
+    return process_instance_run(process_model_identifier, process_instance.id, force_run, execution_mode)
+
+
 def process_instance_create(
     modified_process_model_identifier: str,
-        #TODO data payload
 ) -> flask.wrappers.Response:
     process_model_identifier = _un_modify_modified_process_model_id(modified_process_model_identifier)
 
