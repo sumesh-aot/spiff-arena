@@ -3,6 +3,7 @@ import os
 import random
 import re
 import string
+import uuid
 from hashlib import sha256
 from typing import Any
 
@@ -42,6 +43,52 @@ from spiffworkflow_backend.services.process_model_test_generator_service import 
 from spiffworkflow_backend.services.process_model_test_runner_service import ProcessModelTestRunner
 from spiffworkflow_backend.services.spec_file_service import ProcessModelFileInvalidError
 from spiffworkflow_backend.services.spec_file_service import SpecFileService
+from SpiffWorkflow.bpmn.parser.BpmnParser import BpmnValidator  # type: ignore
+from spiffworkflow_backend.services.custom_parser import MyCustomParser
+from lxml import etree  # type: ignore
+
+
+def process_model_create_formsflow(upload: FileStorage) -> flask.wrappers.Response:
+
+    _get_process_group_from_modified_identifier("formsflow")
+
+    # Validate BPMN
+    parser = MyCustomParser()
+    _content = upload.stream.read()
+    _key = None
+    _name = None
+
+    try:
+        etree_xml_parser = etree.XMLParser(resolve_entities=False, remove_comments=True, no_network=True)
+        element : etree.Element = etree.fromstring(_content, parser=etree_xml_parser)
+        parser.add_bpmn_xml(element)
+        _key = list(parser.process_parsers.keys())[0]
+        _name = parser.process_parsers.get(_key).node.attrib.get("name")
+    except Exception as exception:
+        raise ProcessModelFileInvalidError(f"Received error trying to parse bpmn xml: {str(exception)}") from exception
+    if not (process_model_info:= ProcessModelService.find_by_process_id(_key)):
+        process_model_info = ProcessModelInfo()  # type: ignore
+    #TODO Check on version management
+
+    process_model_info.display_name = _name
+    process_model_info.content = _content
+    process_model_info.id = _key
+    if process_model_info is None:
+        raise ApiError(
+            error_code="process_model_could_not_be_created",
+            message="Process Model could not be created from given body",
+            status_code=400,
+        )
+
+    ProcessModelService.add_process_model(process_model_info)
+
+    response = json.dumps(ProcessModelInfoSchema(exclude=('content',)).dump(process_model_info))
+
+    return Response(
+        response,
+        status=201,
+        mimetype="application/json",
+    )
 
 
 def process_model_create(

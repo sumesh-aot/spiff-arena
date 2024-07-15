@@ -434,15 +434,15 @@ def _get_process_model_for_instantiation(
     process_model_identifier: str,
 ) -> ProcessModelInfo:
     process_model = _get_process_model(process_model_identifier)
-    if process_model.primary_file_name is None:
-        raise ApiError(
-            error_code="process_model_missing_primary_bpmn_file",
-            message=(
-                f"Process Model '{process_model_identifier}' does not have a primary"
-                " bpmn file. One must be set in order to instantiate this model."
-            ),
-            status_code=400,
-        )
+    # if process_model.primary_file_name is None:
+    #     raise ApiError(
+    #         error_code="process_model_missing_primary_bpmn_file",
+    #         message=(
+    #             f"Process Model '{process_model_identifier}' does not have a primary"
+    #             " bpmn file. One must be set in order to instantiate this model."
+    #         ),
+    #         status_code=400,
+    #     )
     return process_model
 
 

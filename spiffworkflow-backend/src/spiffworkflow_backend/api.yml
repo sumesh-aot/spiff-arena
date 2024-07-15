@@ -582,6 +582,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessModel"
 
+
   /process-model-natural-language/{modified_process_group_id}:
     parameters:
       - name: modified_process_group_id
@@ -3241,6 +3242,67 @@ paths:
       responses:
         "200":
           description: The requested data store.
+
+  /deployment/create:
+    post:
+      operationId: spiffworkflow_backend.routes.process_models_controller.process_model_create_formsflow
+      summary: Creates a new process model with the given parameters.
+      tags:
+        - Process Models
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                deployment_name:
+                  type: string
+                  description: The name of the deployment
+                deployment_source:
+                  type: string
+                  description: The source of the deployment
+                enable_duplicate_filtering:
+                  type: boolean
+                  description: Whether to enable duplicate filtering
+                upload:
+                  type: string
+                  format: binary
+                  description: The BPMN file to upload
+      responses:
+        "201":
+          description: Process model created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessModel"
+
+  /key/{process_model_identifier}/start:
+    parameters:
+      - name: process_model_identifier
+        in: path
+        required: true
+        description: The unique id of an existing process model.
+        schema:
+          type: string
+    post:
+      operationId: spiffworkflow_backend.routes.process_instances_controller.process_instance_start
+      summary: Creates and run process instance from a process model and returns the instance
+      tags:
+        - Process Instances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "201":
+          description: Workflow generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workflow"
 
 components:
   securitySchemes:
