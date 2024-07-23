@@ -9,6 +9,7 @@ from typing import Any
 
 import connexion  # type: ignore
 import flask.wrappers
+import fnmatch
 from flask import current_app
 from flask import g
 from flask import jsonify
@@ -68,7 +69,7 @@ def process_model_create_formsflow(upload: FileStorage) -> flask.wrappers.Respon
         raise ProcessModelFileInvalidError(f"Received error trying to parse bpmn xml: {str(exception)}") from exception
     if not (process_model_info:= ProcessModelService.find_by_process_id(_key)):
         process_model_info = ProcessModelInfo()  # type: ignore
-    #TODO Check on version management
+    # TODO Check on version management
 
     process_model_info.display_name = _name
     process_model_info.content = _content
@@ -88,6 +89,72 @@ def process_model_create_formsflow(upload: FileStorage) -> flask.wrappers.Respon
         response,
         status=201,
         mimetype="application/json",
+    )
+
+
+def process_definition_list(
+    latestVersion: bool | None = False,
+    includeProcessDefinitionsWithoutTenantId: bool | None = False,
+    sortBy: str | None = None,
+    sortOrder: str | None = None,
+    firstResult: int | None = 0,
+    maxResults: int = 100,
+    nameLike: str | None = None,
+    return_count_only: bool | None = False,
+) -> flask.wrappers.Response:
+
+    page = (firstResult // maxResults) + 1
+    per_page = maxResults
+
+    process_models = ProcessModelService.get_process_models_for_api(user=g.user)
+    process_models_to_return = ProcessModelService.get_batch(process_models, page=page, per_page=per_page)
+
+    # Convert to desired format
+    converted_process_models = [
+        {
+            "id": model.id,
+            "key": model.id,  # Assuming 'key' is same as 'id'
+            "tenantId": None,  # TODO: Need to update
+            "name": model.display_name,
+            "description": model.description,
+            "version": 1,  # Assuming version 1
+            "resource": model.files[0].name if model.files else None,
+            "deploymentId": "some_deployment_id",  # TODO: Placeholder, update with actual
+            "suspended": False,  # TODO: Do something based on model.fault_or_suspend_on_exception
+        }
+        for model in process_models_to_return
+    ]
+
+    # Filter by nameLike if provided TODO : Change to filter using db query itself.
+    if nameLike:
+        pattern = nameLike.replace('%', '*').lower()
+        converted_process_models = [
+            model for model in converted_process_models if fnmatch.fnmatch(model["name"].lower(), pattern)
+        ]
+    if return_count_only:
+        return make_response(jsonify({"count": len(converted_process_models)}), 200)
+
+    return make_response(jsonify(converted_process_models), 200)
+
+
+def process_definition_list_count(
+    latestVersion: bool | None = False,
+    includeProcessDefinitionsWithoutTenantId: bool | None = False,
+    sortBy: str | None = None,
+    sortOrder: str | None = None,
+    firstResult: int | None = 0,
+    maxResults: int = 100,
+    nameLike: str | None = None,
+) -> flask.wrappers.Response:
+    return process_definition_list(
+        latestVersion,
+        includeProcessDefinitionsWithoutTenantId,
+        sortBy,
+        sortOrder,
+        firstResult,
+        maxResults,
+        nameLike,
+        True,
     )
 
 

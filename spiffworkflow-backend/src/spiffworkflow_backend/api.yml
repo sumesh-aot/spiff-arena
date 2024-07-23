@@ -3276,6 +3276,113 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessModel"
 
+  /process-definition:
+    parameters:
+      - name: latestVersion
+        in: query
+        required: false
+        description: Return only the latest version of each process definition
+        schema:
+          type: boolean
+      - name: includeProcessDefinitionsWithoutTenantId
+        in: query
+        required: false
+        description: Include process definitions that do not have a tenant ID
+        schema:
+          type: boolean
+      - name: sortBy
+        in: query
+        required: false
+        description: Sort the results by the given field
+        schema:
+          type: string
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort the results in the specified order (asc or desc)
+        schema:
+          type: string
+      - name: maxResults
+        in: query
+        required: false
+        description: Maximum number of results to return
+        schema:
+          type: integer
+      - name: nameLike
+        in: query
+        required: false
+        description: Filter with name
+        schema:
+          type: string
+    get:
+      operationId: spiffworkflow_backend.routes.process_models_controller.process_definition_list
+      summary: Return a list of process definitions
+      tags:
+        - Process Definitions
+      responses:
+        "200":
+          description: Successfully return the requested process definitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessModel"
+
+  /process-definition/count:
+    parameters:
+      - name: latestVersion
+        in: query
+        required: false
+        description: Return only the latest version of each process definition
+        schema:
+          type: boolean
+      - name: includeProcessDefinitionsWithoutTenantId
+        in: query
+        required: false
+        description: Include process definitions that do not have a tenant ID
+        schema:
+          type: boolean
+      - name: sortBy
+        in: query
+        required: false
+        description: Sort the results by the given field
+        schema:
+          type: string
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort the results in the specified order (asc or desc)
+        schema:
+          type: string
+      - name: maxResults
+        in: query
+        required: false
+        description: Maximum number of results to return
+        schema:
+          type: integer
+      - name: nameLike
+        in: query
+        required: false
+        description: Filter with name
+        schema:
+          type: string
+    get:
+      operationId: spiffworkflow_backend.routes.process_models_controller.process_definition_list_count
+      summary: Return the count of process models
+      tags:
+        - Process Definitions
+      responses:
+        "200":
+          description: Successfully return the requested process definitions count
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessModelCount"
+
+
   /key/{process_model_identifier}/start:
     parameters:
       - name: process_model_identifier
@@ -3979,4 +4086,10 @@ components:
       properties:
         api_key:
           type: string
+          nullable: false
+    ProcessModelCount:
+      properties:
+        count:
+          type: number
+          example: 1
           nullable: false
