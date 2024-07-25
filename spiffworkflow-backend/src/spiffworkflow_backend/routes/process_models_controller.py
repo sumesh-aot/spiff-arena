@@ -106,7 +106,7 @@ def process_definition_list(
     page = (firstResult // maxResults) + 1
     per_page = maxResults
 
-    process_models = ProcessModelService.get_process_models_for_api(user=g.user)
+    process_models = ProcessModelService.get_process_models_for_api(user=g.user, filter_by_name=nameLike)
     process_models_to_return = ProcessModelService.get_batch(process_models, page=page, per_page=per_page)
 
     # Convert to desired format
@@ -125,12 +125,6 @@ def process_definition_list(
         for model in process_models_to_return
     ]
 
-    # Filter by nameLike if provided TODO : Change to filter using db query itself.
-    if nameLike:
-        pattern = nameLike.replace('%', '*').lower()
-        converted_process_models = [
-            model for model in converted_process_models if fnmatch.fnmatch(model["name"].lower(), pattern)
-        ]
     if return_count_only:
         return make_response(jsonify({"count": len(converted_process_models)}), 200)
 

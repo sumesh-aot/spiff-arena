@@ -3302,6 +3302,12 @@ paths:
         description: Sort the results in the specified order (asc or desc)
         schema:
           type: string
+      - name: firstResult
+        in: query
+        required: false
+        description: Count of the first result to return
+        schema:
+          type: integer
       - name: maxResults
         in: query
         required: false
@@ -3355,6 +3361,12 @@ paths:
         description: Sort the results in the specified order (asc or desc)
         schema:
           type: string
+      - name: firstResult
+        in: query
+        required: false
+        description: Count of the first result to return
+        schema:
+          type: integer
       - name: maxResults
         in: query
         required: false
