@@ -3422,6 +3422,135 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Workflow"
+  /task-filters:
+    post:
+      summary: Retrieve filtered tasks based on pagination and other criteria
+      operationId: spiffworkflow_backend.routes.ff_tasks_controller.filter_tasks
+      parameters:
+        - name: firstResult
+          in: query
+          required: true
+          description: The starting index of the results to return
+          schema:
+            type: integer
+        - name: maxResults
+          in: query
+          required: true
+          description: The maximum number of results to return
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved filtered tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _links:
+                      type: object
+                      properties:
+                        self:
+                          type: object
+                          properties:
+                            href:
+                              type: string
+                    _embedded:
+                      type: object
+#                      properties:
+#                        assignee:
+#                          type: array
+#                          items:
+#                            $ref: '#/components/schemas/FfUser'
+#                        processDefinition:
+#                          type: array
+#                          items:
+#                            $ref: '#/components/schemas/ProcessDefinition'
+#                        task:
+#                          type: array
+#                          items:
+#                            $ref: '#/components/schemas/FfTask'
+                    count:
+                      type: integer
+  /task/{task_id}:
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        description: "The unique id of an existing process group."
+        schema:
+          type: string
+    get:
+      tags:
+        - Tasks
+      operationId: spiffworkflow_backend.routes.ff_tasks_controller.get_task_by_id
+      summary: "Gets one task that a user wants to complete"
+      responses:
+        "200":
+          description: "One task"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+
+  /task/{task_id}/claim:
+    post:
+      summary: "Claim task"
+      operationId: spiffworkflow_backend.routes.ff_tasks_controller.claim_task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          description: "The unique id of an existing process group."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Successfully claimed task"
+          content:
+            application/json:
+              schema:
+                type: object
+  /task/{task_id}/unclaim:
+    post:
+      summary: "Unclaim task"
+      operationId: spiffworkflow_backend.routes.ff_tasks_controller.unclaim_task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          description: "The unique id of an existing process group."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Successfully unclaimed task"
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /task/{task_id}/submit-form:
+    post:
+      summary: "Submit form"
+      operationId: spiffworkflow_backend.routes.ff_tasks_controller.submit_task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          description: "The unique id of an existing process group."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Successfully submitted task"
+          content:
+            application/json:
+              schema:
+                type: object
 
 components:
   securitySchemes:
@@ -4105,3 +4234,178 @@ components:
           type: number
           example: 1
           nullable: false
+
+#    FfUser:
+#      type: object
+#      properties:
+#        _links:
+#          type: object
+#          properties:
+#            self:
+#              type: object
+#              properties:
+#                href:
+#                  type: string
+#        _embedded:
+#          type: object
+#        id:
+#          type: string
+#        firstName:
+#          type: string
+#        lastName:
+#          type: string
+#        email:
+#          type: string
+#      ProcessDefinition:
+#        type: object
+#        properties:
+#          _links:
+#            type: object
+#            additionalProperties:
+#              type: object
+#              properties:
+#                href:
+#                  type: string
+#          _embedded:
+#            type: object
+#          id:
+#            type: string
+#          key:
+#            type: string
+#          category:
+#            type: string
+#          description:
+#            type: string
+#          name:
+#            type: string
+#          versionTag:
+#            type: string
+#          version:
+#            type: integer
+#          resource:
+#            type: string
+#          deploymentId:
+#            type: string
+#          diagram:
+#            type: string
+#          suspended:
+#            type: boolean
+#          contextPath:
+#            type: string
+#    FfTask:
+#      type: object
+#      properties:
+#        _links:
+#          type: object
+#          additionalProperties:
+#            type: object
+#            properties:
+#              href:
+#                type: string
+#        _embedded:
+#          type: object
+#          properties:
+#            candidateGroups:
+#              type: array
+#              items:
+#                $ref: '#/components/schemas/CandidateGroup'
+#            variable:
+#              type: array
+#              items:
+#                $ref: '#/components/schemas/Variable'
+#        id:
+#          type: string
+#        name:
+#          type: string
+#        assignee:
+#          type: string
+#        created:
+#          type: string
+#          format: date-time
+#        due:
+#          type: string
+#          format: date-time
+#        followUp:
+#          type: string
+#          format: date-time
+#        delegationState:
+#          type: string
+#        description:
+#          type: string
+#        executionId:
+#          type: string
+#        owner:
+#          type: string
+#        parentTaskId:
+#          type: string
+#        priority:
+#          type: integer
+#        processDefinitionId:
+#          type: string
+#        processInstanceId:
+#          type: string
+#        taskDefinitionKey:
+#          type: string
+#        caseExecutionId:
+#          type: string
+#        caseInstanceId:
+#          type: string
+#        caseDefinitionId:
+#          type: string
+#        suspended:
+#          type: boolean
+#        formKey:
+#          type: string
+#        camundaFormRef:
+#          type: string
+#        tenantId:
+#          type: string
+#      CandidateGroup:
+#        type: object
+#        properties:
+#          _links:
+#            type: object
+#            properties:
+#              group:
+#                type: object
+#                properties:
+#                  href:
+#                    type: string
+#              task:
+#                type: object
+#                properties:
+#                  href:
+#                    type: string
+#          _embedded:
+#            type: object
+#          type:
+#            type: string
+#          userId:
+#            type: string
+#          groupId:
+#            type: string
+#          taskId:
+#            type: string
+#      Variable:
+#        type: object
+#        properties:
+#          _links:
+#            type: object
+#            properties:
+#              self:
+#                type: object
+#                properties:
+#                  href:
+#                    type: string
+#          _embedded:
+#            type: object
+#          name:
+#            type: string
+#          value:
+#            type: string
+#          type:
+#            type: string
+#          valueInfo:
+#            type: object
+#            additionalProperties:
+#              type: string

@@ -47,6 +47,7 @@ from spiffworkflow_backend.services.spec_file_service import SpecFileService
 from SpiffWorkflow.bpmn.parser.BpmnParser import BpmnValidator  # type: ignore
 from spiffworkflow_backend.services.custom_parser import MyCustomParser
 from lxml import etree  # type: ignore
+from spiffworkflow_backend.routes.process_instances_controller import process_instance_create
 
 
 def process_model_create_formsflow(upload: FileStorage) -> flask.wrappers.Response:

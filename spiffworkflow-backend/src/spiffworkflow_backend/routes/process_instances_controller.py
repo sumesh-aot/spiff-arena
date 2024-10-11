@@ -1,3 +1,5 @@
+import uuid
+
 from spiffworkflow_backend.helpers.spiff_enum import ProcessInstanceExecutionMode
 
 # black and ruff are in competition with each other in import formatting so ignore ruff
@@ -5,6 +7,12 @@ from spiffworkflow_backend.helpers.spiff_enum import ProcessInstanceExecutionMod
 
 import json
 from typing import Any
+import time
+
+import copy
+import json
+import uuid
+from hashlib import sha256
 
 import flask.wrappers
 from flask import current_app
@@ -72,7 +80,32 @@ def process_instance_start(
     current_app.logger.info(f"Instance created succesfully : {process_instance.id}")
 
     current_app.logger.info("running the instance")
-    return process_instance_run(process_model_identifier, process_instance.id, force_run, execution_mode)
+    process_instance_response = process_instance_run(process_model_identifier, process_instance.id, force_run, execution_mode)
+
+    # Create a dummy task to hold the process instance data
+    blank_json = json.dumps({})
+    blank_json_data_hash = sha256(blank_json.encode("utf8")).hexdigest()
+    json_data_hash = sha256(json.dumps(body).encode("utf8")).hexdigest()
+    # Find the task definition for the start event and use it
+    print("process_instance.bpmn_process_definition_id ", process_instance.bpmn_process_definition_id)
+    task_def_model: TaskDefinitionModel = TaskDefinitionModel.query.filter_by(typename='StartEvent',
+                                                                              bpmn_process_definition_id=process_instance.bpmn_process_definition_id).first()
+
+    TaskModel(
+        guid=uuid.uuid4(),
+        bpmn_process_id=process_instance.bpmn_process_id,
+        process_instance_id=process_instance.id,
+        task_definition_id=task_def_model.id,
+        state='COMPLETED',
+        properties_json={},
+        start_in_seconds=time.time(),
+        end_in_seconds=time.time(),
+        json_data_hash=json_data_hash,
+        python_env_data_hash=blank_json_data_hash,
+        data=body
+    )
+
+    return process_instance_response
 
 
 def process_instance_create(

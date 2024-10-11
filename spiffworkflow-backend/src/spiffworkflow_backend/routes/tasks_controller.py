@@ -62,7 +62,7 @@ from spiffworkflow_backend.services.process_instance_queue_service import Proces
 from spiffworkflow_backend.services.process_instance_service import ProcessInstanceService
 from spiffworkflow_backend.services.process_instance_tmp_service import ProcessInstanceTmpService
 from spiffworkflow_backend.services.task_service import TaskService
-
+import time
 
 def task_allows_guest(
     process_instance_id: int,
@@ -377,11 +377,15 @@ def task_assign(
         )
 
     human_task = human_tasks[0]
+    # formsflow.ai allows only one user per task.
+    human_task_users = HumanTaskUserModel.query.filter_by(ended_at_in_seconds=None, human_task=human_task).all()
+    for human_task_user in human_task_users:
+        human_task_user.ended_at_in_seconds = round(time.time())
 
     for user_id in body["user_ids"]:
         human_task_user = HumanTaskUserModel.query.filter_by(user_id=user_id, human_task=human_task).first()
         if human_task_user is None:
-            human_task_user = HumanTaskUserModel(user_id=user_id, human_task=human_task)
+            human_task_user = HumanTaskUserModel(user_id=user_id, human_task=human_task, created_at_in_seconds=round(time.time()))
             db.session.add(human_task_user)
 
     SpiffworkflowBaseDBModel.commit_with_rollback_on_exception()

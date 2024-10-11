@@ -94,7 +94,9 @@ class AuthorizationService:
     @classmethod
     def has_permission(cls, principals: list[PrincipalModel], permission: str, target_uri: str) -> bool:
         principal_ids = [p.id for p in principals]
+        print("principal_ids ", principal_ids)
         target_uri_normalized = target_uri.removeprefix(V1_API_PATH_PREFIX)
+        print("target_uri_normalized ", target_uri_normalized)
 
         permission_assignments = (
             PermissionAssignmentModel.query.filter(PermissionAssignmentModel.principal_id.in_(principal_ids))
@@ -112,6 +114,7 @@ class AuthorizationService:
             )
             .all()
         )
+        print("permission_assignments ", permission_assignments)
 
         if len(permission_assignments) == 0:
             return False
@@ -130,6 +133,7 @@ class AuthorizationService:
     @classmethod
     def user_has_permission(cls, user: UserModel, permission: str, target_uri: str) -> bool:
         principals = UserService.all_principals_for_user(user)
+        print("principals -->", principals)
         return cls.has_permission(principals, permission, target_uri)
 
     @classmethod
@@ -349,7 +353,10 @@ class AuthorizationService:
     @classmethod
     def check_permission_for_request(cls) -> None:
         permission_string = cls.get_permission_from_http_method(request.method)
+        print("permission_string ", permission_string)
         if permission_string:
+            print("g.user ", g.user)
+            print("request.path ", request.path)
             has_permission = cls.user_has_permission(
                 user=g.user,
                 permission=permission_string,
